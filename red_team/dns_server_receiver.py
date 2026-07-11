@@ -2,7 +2,7 @@
 from scapy.all import *
 
 DOMINIO_FALSO = "beacon.falso.local"
-PUERTO_DNS = 53
+PUERTO_DNS = 9000
 
 def procesar_paquete_dns(pkt):
     # Verificamos si es una consulta DNS entrante

