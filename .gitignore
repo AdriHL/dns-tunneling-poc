@@ -1,0 +1,17 @@
+# Python compilado
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Entornos virtuales
+venv/
+.venv/
+
+# Carpetas de editores de código
+.vscode/
+.idea/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
